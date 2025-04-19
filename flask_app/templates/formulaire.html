@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>Participant Information</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Veuillez remplir les informations :</h1>
+        <form action="{{ url_for('formulaire') }}" method="POST">
+            <label for="prenom">Prénom:</label>
+            <input type="text" id="prenom" name="prenom" required>
+
+            <label for="age">Âge:</label>
+            <input type="number" id="age" name="age" required>
+
+            <label for="niveau">Niveau:</label>
+            <select id="niveau" name="niveau">
+                <option value="Oui, débutant">Oui, débutant</option>
+                <option value="Oui, intermédiaire">Oui, intermédiaire</option>
+                <option value="Oui, avancé">Oui, avancé</option>
+                <option value="Non">Non</option>
+            </select>
+
+            <button type="submit">Valider</button>
+        </form>
+    </div>
+</body>
+</html>

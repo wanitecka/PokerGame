@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>Welcome to Poker Game</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Bienvenue au Casino !</h1>
+        <p>Vous allez jouer au poker.</p>
+        <p>Vous démarrez avec 100€ pour miser.</p>
+
+        <h2>Rappel des règles :</h2>
+        <ul>
+            <li>Vous recevez 2 cartes privées, visibles uniquement par vous.</li>
+            <li>5 cartes communes seront révélées progressivement.</li>
+            <li>Le but : faire la meilleure combinaison possible.</li>
+            <li>Mais attention, les autres joueurs peuvent avoir mieux !</li>
+        </ul>
+
+        <p>Appuyez sur le bouton ci-dessous pour commencer :</p>
+        <a href="{{ url_for('formulaire') }}" class="btn">Commencer</a>
+    </div>
+</body>
+</html>

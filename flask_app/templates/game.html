@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>Poker Game</title>
+</head>
+<body>
+    <div class="container">
+        <img src="{{ url_for('static', filename='images/fond_poker.png') }}" alt="Poker Background" class="background">
+        <h1>Welcome to the Poker Game!</h1>
+        <div class="game-info">
+            <p>Initial Blind: {{ mise_depart }}€</p>
+            <p>Total Bet: {{ mise_totale }}€</p>
+            <p>Money Left: {{ money_left }}€</p>
+            <p>Chance of Winning: {{ chances }}%</p>
+        </div>
+        <div class="cards">
+            <h2>Your Cards:</h2>
+            <div class="personal-cards">
+                <img src="{{ url_for('static', filename='cartes_images/' + cartes[0] + '.png') }}" alt="Card 1">
+                <img src="{{ url_for('static', filename='cartes_images/' + cartes[1] + '.png') }}" alt="Card 2">
+            </div>
+            <h2>Community Cards:</h2>
+            <div class="community-cards">
+                {% for card in cartes_communes %}
+                    <img src="{{ url_for('static', filename='cartes_images/' + card + '.png') }}" alt="Community Card">
+                {% endfor %}
+            </div>
+        </div>
+        <div class="actions">
+            <h2>What do you decide?</h2>
+            <form method="POST" action="{{ url_for('game_action') }}">
+                <button type="submit" name="action" value="follow">Follow</button>
+                <button type="submit" name="action" value="fold">Fold</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

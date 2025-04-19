@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>End of Game</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Fin de l'expérience</h1>
+        <p>Total misé : {{ total_mise }}€</p>
+        <p>Merci d'avoir joué !</p>
+        <p>Quel est votre sexe ?</p>
+        <form action="{{ url_for('submit_sex') }}" method="post">
+            <input type="radio" id="female" name="sexe" value="female" checked>
+            <label for="female">Femme</label><br>
+            <input type="radio" id="male" name="sexe" value="male">
+            <label for="male">Homme</label><br>
+            <button type="submit">Soumettre</button>
+        </form>
+        <p><a href="{{ url_for('index') }}">Retour à l'accueil</a></p>
+    </div>
+</body>
+</html>
