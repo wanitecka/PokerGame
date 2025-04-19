@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +8,7 @@
 </head>
 <body>
     <header>
-        <h1>Welcome to the Poker Game</h1>
+        <h1>Bienvenue au Casino</h1>
     </header>
     <main>
         {% block content %}{% endblock %}
@@ -16,5 +16,11 @@
     <footer>
         <p>&copy; 2023 Poker Game</p>
     </footer>
+    <script>
+        history.pushState(null, null, location.href);
+        window.onpopstate = function () {
+            history.go(1);
+        };
+    </script>
 </body>
 </html>

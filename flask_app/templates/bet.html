@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>Miser</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Miser</h1>
+        <p>Total misé : {{ mise_totale }}€</p>
+        <p>Argent restant : {{ money_left }}€</p>
+        <form method="POST" action="{{ url_for('bet') }}">
+            <label for="bet">Entrez votre mise :</label>
+            <input type="number" id="bet" name="bet" min="0" max="{{ money_left }}" required>
+            <button type="submit">Miser</button>
+        </form>
+        {% if message %}
+            <p class="error">{{ message }}</p>
+        {% endif %}
+    </div>
+</body>
+</html>
