@@ -19,7 +19,7 @@
             <h2>Vos Cartes :</h2>
             <div class="personal-cards">
                 {% for card in cartes %}
-                    <img src="{{ url_for('static', filename='cartes_images/' + card + '.png') }}" alt="Carte {{ loop.index }}">
+                <img src="{{ url_for('static', filename=image_paths[card]) }}" alt="Carte {{ loop.index }}">
                 {% endfor %}
             </div>
 
@@ -27,7 +27,7 @@
             <h2>Cartes Communes :</h2>
             <div class="community-cards">
                 {% for card in cartes_communes %}
-                    <img src="{{ url_for('static', filename='cartes_images/' + card + '.png') }}" alt="Carte Commune {{ loop.index }}">
+                <img src="{{ url_for('static', filename=image_paths[card]) }}" alt="Carte Commune {{ loop.index }}">
                 {% endfor %}
             </div>
         </div>

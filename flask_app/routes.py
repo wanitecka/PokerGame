@@ -5,54 +5,85 @@ import os
 import csv
 
 # Global variables
-participant_info = {}  # To store player information (e.g., name, age, level)
+participant_info = {"prenom": "", "age": "", "niveau": "", "traitement": ""}  # To store player information (e.g., name, age, level)
 mise_depart = 0        # Initial bet amount (randomly assigned as 0 or 50)
 mise_totale = 0        # Total bet amount during the game
 dotation_initiale = 100  # Initial funds for the player
+cartes = []  # Player's personal cards
+cartes_communes = []  # Community cards
 
-def save_user_data(data):
+def save_user_data(info, cartes, decision, montant=0):
     """
     Save the player's data to a CSV file.
     """
-    directory = 'data'
-    file_path = os.path.join(directory, 'user_data.csv')
+    with open("data/decisions.csv", "a", newline="") as f:
+       writer = csv.writer(f)
+       writer.writerow([
+           info["prenom"], info["age"], info["niveau"], info["traitement"], info["sexe"],
+           cartes[0], cartes[1], decision, montant
+         ])
 
-    # Ensure the directory exists
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+def initialiser_deck():
+    """
+    Initialize a full deck of cards.
+    """
+    valeurs = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+    couleurs = ['D', 'H', 'S', 'C']  # D = Diamond, H = Heart, S = Spade, C = Club
+    return [v + c for v in valeurs for c in couleurs]
+    
+def tirer_cartes(deck, n):
+    """
+    Draw n unique cards from the shared deck.
+    """
+    return [deck.pop(random.randint(0, len(deck) - 1)) for _ in range(n)]
+    
+def charger_images_cartes():
+    """
+    Generate a mapping of card codes to their image file paths (relative to /static).
+    """
+    dossier = os.path.join("static", "cartes_images")
+    images = {}
+    for nom_fichier in os.listdir(dossier):
+        if nom_fichier.endswith(".png"):
+            code = nom_fichier[:-4]  # Remove ".png"
+            images[code] = f"cartes_images/{nom_fichier}"
+    return images
 
-    file_exists = os.path.isfile(file_path)
-
-    with open(file_path, mode='a', newline='') as file:
-        writer = csv.DictWriter(file, fieldnames=["prenom", "age", "niveau", "sexe", "mise_totale", "dotation_initiale"])
-        if not file_exists:
-            writer.writeheader()  # Write the header only if the file doesn't exist
-        writer.writerow(data)
-        
 # Initialize the game instance
 game = PokerGame()
 
 def register_routes(app):
     @app.route('/')
     def index():
-        return render_template('index.html')
+        return render_template('index.html')  # Just intro or instructions page
 
     @app.route('/formulaire', methods=['GET', 'POST'])
     def formulaire():
         global participant_info, mise_depart
         if request.method == 'POST':
-            # Collect participant information from the form
-            participant_info['prenom'] = request.form['prenom']
-            participant_info['age'] = request.form['age']
-            participant_info['niveau'] = request.form['niveau']
-
-            # Randomly assign mise_depart as 0 or 50
+            # 1. Collect participant information from the form
+            participant_info = {
+                'prenom': request.form['prenom'],
+                'age': request.form['age'],
+                'niveau': request.form['niveau'],
+            }
+            
+            # 2. Randomly assign mise_depart as 0 or 50
             mise_depart = random.choice([0, 50])
 
-            # Initialize the game
-            game.initialize_game()
+            # 3. Initialize deck and draw 2 cards
+            deck = initialiser_deck()
+            cartes[:] = tirer_cartes(deck, 2)
 
-            return redirect(url_for('jeu'))  # Redirect to the game page
+            # 4. Log preflop decision at initial draw
+            save_user_data(participant_info, game.cartes, decision="préflop", montant=mise_depart)
+
+            # 5. Initialize the game and store cards/deck
+            game = PokerGame()
+            game.initialize_game()
+            game.mise_totale = mise_depart
+
+            return redirect(url_for('jeu')) # Redirect to the game page
 
         # Render the formulaire page
         return render_template('formulaire.html')
@@ -76,15 +107,15 @@ def register_routes(app):
                 message = "Vous avez décidé de vous coucher. Fin de la partie."
                 return redirect(url_for('end'))  # Redirect to the end page
 
-        # Debugging: Print the current phase and community cards
-        print(f"Rendering /jeu. Current phase: {game.phase}")
-        print(f"Community cards: {game.get_community_cards()}")
+        # Load card image paths
+        image_paths = charger_images_cartes()
 
         # Render the game page
         return render_template(
             'game.html',
             cartes=game.cartes,
             cartes_communes=game.get_community_cards(),
+            image_paths=image_paths,
             mise_depart=mise_depart,
             mise_totale=game.mise_totale,
             money_left=game.dotation_initiale - game.mise_totale - mise_depart,  # Include mise_depart
@@ -123,6 +154,7 @@ def register_routes(app):
             money_left=game.dotation_initiale - game.mise_totale,
             message=message
         )
+    
     @app.route('/end', methods=['GET', 'POST'])
     def end():
         global participant_info, mise_depart, mise_totale, game
