@@ -91,7 +91,7 @@ def register_routes(app):
         image_paths = charger_images_cartes()
 
         # Check if money left is 0
-        if money_left <= 0 and game.phase > 3:
+        if money_left <= 0:
             logger.info(f"Redirecting to final_form — money_left: {money_left}, round: {round_number}, phase: {game.phase}")
             return redirect(url_for('final_form'))  # Redirect to the end screen
 
