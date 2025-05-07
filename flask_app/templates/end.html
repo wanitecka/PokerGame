@@ -14,19 +14,8 @@
             <p class="alert">Vous n'avez plus d'argent. La partie est terminée.</p>
         {% endif %}
 
-        <p>Total misé : {{ mise_totale }}€</p>
-        <p>Dotation initiale : {{ dotation_initiale }}€</p>
         <p>Merci d'avoir joué !</p>
-        <p>Quel est votre sexe ?</p>
-        <form action="{{ url_for('end') }}" method="post">
-            <input type="radio" id="female" name="sexe" value="Femme" required>
-            <label for="female">Femme</label><br>
-            <input type="radio" id="male" name="sexe" value="Homme">
-            <label for="male">Homme</label><br>
-            <input type="radio" id="other" name="sexe" value="Autre">
-            <label for="other">Autre</label><br>
-            <button type="submit">Soumettre</button>
-        </form>
+       
         <p><a href="{{ url_for('index') }}">Retour à l'accueil</a></p>
     </div>
 </body>

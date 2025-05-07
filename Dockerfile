@@ -10,11 +10,11 @@ COPY requirements.txt requirements.txt
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application code into the container
-COPY . .
+# Copy the application code into the container (including static folder)
+COPY . /app
 
 # Set the environment variable for Flask
-ENV FLASK_APP=wsgi.py
+ENV FLASK_APP=wsgi
 
 # Expose the port Flask will run on
 EXPOSE 5000

@@ -1,189 +1,303 @@
-from flask import Flask, render_template, request, redirect, url_for
-from flask_app.game_logic import PokerGame
+from flask import Flask, render_template, request, redirect, url_for, session, send_file
 import random
 import os
 import csv
+from datetime import datetime
+from flask_app.game_logic import PokerGame, initialiser_deck, tirer_cartes, charger_images_cartes
 
 # Global variables
-participant_info = {"prenom": "", "age": "", "niveau": "", "traitement": ""}  # To store player information (e.g., name, age, level)
-mise_depart = 0        # Initial bet amount (randomly assigned as 0 or 50)
+participant_info = {"age": "", "niveau": "", "traitement": ""}  # To store player information (e.g., name, age, level)
 mise_totale = 0        # Total bet amount during the game
-dotation_initiale = 100  # Initial funds for the player
 cartes = []  # Player's personal cards
 cartes_communes = []  # Community cards
+# Store the round number
+round_number = 1  # Starts at 1, and will go up to 3
+max_rounds = 3  # We'll play 3 rounds
 
 def save_user_data(info, cartes, decision, montant=0):
+
+    round_number = session.get('round_number', 1)
+    phase = getattr(game, 'phase', None)  # Safely get the current phase
+    
+    print("📁 Attempting to save data to CSV...")
     """
     Save the player's data to a CSV file.
     """
-    with open("data/decisions.csv", "a", newline="") as f:
-       writer = csv.writer(f)
-       writer.writerow([
-           info["prenom"], info["age"], info["niveau"], info["traitement"], info["sexe"],
-           cartes[0], cartes[1], decision, montant
-         ])
+    data = os.path.join(os.getcwd(), 'data')
+    if not os.path.exists(data):
+        os.makedirs(data)
+        if not os.path.exists("data"):
+            os.makedirs("data")
 
-def initialiser_deck():
-    """
-    Initialize a full deck of cards.
-    """
-    valeurs = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
-    couleurs = ['D', 'H', 'S', 'C']  # D = Diamond, H = Heart, S = Spade, C = Club
-    return [v + c for v in valeurs for c in couleurs]
+    timestamp = datetime.now().isoformat()
+
+    row = [
+        timestamp,
+        info.get("age") if info else "",
+        info.get("niveau") if info else "",
+        info.get("sexe") if info else "",
+        cartes[0] if cartes else "",
+        cartes[1] if cartes else "",
+        decision,
+        montant,
+        round_number,
+        phase
+    ]
     
-def tirer_cartes(deck, n):
-    """
-    Draw n unique cards from the shared deck.
-    """
-    return [deck.pop(random.randint(0, len(deck) - 1)) for _ in range(n)]
-    
-def charger_images_cartes():
-    """
-    Generate a mapping of card codes to their image file paths (relative to /static).
-    """
-    dossier = os.path.join("static", "cartes_images")
-    images = {}
-    for nom_fichier in os.listdir(dossier):
-        if nom_fichier.endswith(".png"):
-            code = nom_fichier[:-4]  # Remove ".png"
-            images[code] = f"cartes_images/{nom_fichier}"
-    return images
+    file_path = os.path.abspath("data/decisions.csv")
+    print("📄 Writing to file:", file_path)
+
+    with open(file_path, "a", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(row)
+        f.flush()
+
+    print("✅ Data saved:", row)
 
 # Initialize the game instance
-game = PokerGame()
+game = PokerGame(deck_initializer=initialiser_deck, draw_function=tirer_cartes)
 
 def register_routes(app):
     @app.route('/')
     def index():
-        return render_template('index.html')  # Just intro or instructions page
-
-    @app.route('/formulaire', methods=['GET', 'POST'])
-    def formulaire():
-        global participant_info, mise_depart
-        if request.method == 'POST':
-            # 1. Collect participant information from the form
-            participant_info = {
-                'prenom': request.form['prenom'],
-                'age': request.form['age'],
-                'niveau': request.form['niveau'],
-            }
-            
-            # 2. Randomly assign mise_depart as 0 or 50
-            mise_depart = random.choice([0, 50])
-
-            # 3. Initialize deck and draw 2 cards
-            deck = initialiser_deck()
-            cartes[:] = tirer_cartes(deck, 2)
-
-            # 4. Log preflop decision at initial draw
-            save_user_data(participant_info, game.cartes, decision="préflop", montant=mise_depart)
-
-            # 5. Initialize the game and store cards/deck
-            game = PokerGame()
-            game.initialize_game()
-            game.mise_totale = mise_depart
-
-            return redirect(url_for('jeu')) # Redirect to the game page
-
-        # Render the formulaire page
-        return render_template('formulaire.html')
+        global game
+        # Reset the game phase and initialize the session round number
+        game.reset_for_new_round()  # Reset the game state for a new round
+        session['round_number'] = 1  # Reset round number at game start
+        return render_template('index.html')
 
     @app.route('/jeu', methods=['GET', 'POST'])
     def jeu():
-        global mise_totale, mise_depart
+        global game, mise_totale, max_rounds, round_number, total_money_bet, mise_depart
 
-        message = ""
-        money_left = game.dotation_initiale - game.mise_totale - mise_depart  # Calculate money left
+        print(f"Current phase: {game.phase}, Round: {session.get('round_number', 1)}")
 
-        # Check if money left is 0
-        if money_left <= 0:
-            return redirect(url_for('end'))  # Redirect to the end screen
-
-        if request.method == 'POST':
-            action = request.form.get('action')  # Get the action from the form
-            if action == 'follow':
-                return redirect(url_for('bet'))  # Redirect to the betting page
-            elif action == 'fold':
-                message = "Vous avez décidé de vous coucher. Fin de la partie."
-                return redirect(url_for('end'))  # Redirect to the end page
-
+        round_number = session.get('round_number', 1)
+       
+    # Initialize/reset game at the start of a new round
+        if request.method == 'GET':
+            if game.phase == 0:  # Only reset for new round when game.phase == 0
+                game.reset_for_new_round()  # Ensures phase is reset to 0
+                mise_depart = 50 if round_number == 3 else 0  # Assign a value to mise_depart
+                game.mise_totale = mise_depart
+                
+        # Calculate money left
+        money_left = game.dotation_initiale - game.mise_totale
         # Load card image paths
         image_paths = charger_images_cartes()
 
+        # Check if money left is 0
+        if money_left <= 0 and game.phase > 3:
+            print(f"Redirecting to final_form — money_left: {money_left}, round: {round_number}, phase: {game.phase}")
+            return redirect(url_for('final_form'))  # Redirect to the end screen
+
+        if request.method == 'POST':
+            action = request.form.get('action')
+            if action == 'follow':
+                return redirect(url_for('bet'))  # Always go to bet on follow
+            elif action == 'fold':
+                return redirect(url_for('final_form'))
+            
+        # Determine which template to render based on the phase
+        if game.phase == 0:
+            template = 'preflop.html'
+        elif game.phase == 1:
+            template = 'flop.html'
+        elif game.phase == 2:
+            template = 'turn.html'
+        elif game.phase == 3:
+            print("We are in Phase 3!")
+            template = 'river.html'
+            
+        # Calculate chances (placeholder logic)
+        chances = random.randint(0, 100)
+
         # Render the game page
         return render_template(
-            'game.html',
+            template,
             cartes=game.cartes,
             cartes_communes=game.get_community_cards(),
             image_paths=image_paths,
             mise_depart=mise_depart,
             mise_totale=game.mise_totale,
-            money_left=game.dotation_initiale - game.mise_totale - mise_depart,  # Include mise_depart
+            money_left=money_left,  # Pass money_left to the template
             chances=game.calculate_chances(),
             phase=game.phase,
-            message=message
+            round_number=session['round_number'],
+            message=None
         )
+    
+    @app.route('/round_summary')
+    def round_summary():
+        global round_number, game
+
+        # Ensure round_number is tracked in session
+        round_number = session.get('round_number', 1)
+        print(f"Round number at summary: {round_number}")
+
+        # Check if game has reached max rounds, then redirect to final form
+        if round_number > max_rounds:
+            return redirect(url_for('final_form'))
+        
+        show_final_button = False  # Valeur par défaut
+
+        # Define the message for each round
+        if round_number == 1:
+            message = "Fin de la première partie. Vous allez commencer la partie 2."
+        elif round_number == 2:
+            message = "Fin de la deuxième partie. Vous allez commencer la dernière partie avec une mise de départ de 50."
+        elif round_number == 3:
+            show_final_button = True
+            return redirect(url_for('end_summary'))
+        
+        show_final_button = (round_number == max_rounds)
+
+        # Render the round summary page with the current round message
+        return render_template('round_summary.html', round_number=round_number, message=message, show_final_button=show_final_button)
+
 
     @app.route('/bet', methods=['GET', 'POST'])
     def bet():
-        global mise_totale
+        global game, mise_totale, mise_depart, total_money_bet
 
+        round_number = session.get('round_number', 1)
+        starting_bet = session.get('starting_bet', 0)
+      
+        if round_number > 3:
+            return redirect(url_for('final_form'))  # or 'end'
+        
+        # Calculate money left
+        money_left = game.dotation_initiale - game.mise_totale
         message = ""
+       
         if request.method == 'POST':
-            try:
-                # Get the bet amount from the form
-                bet = int(request.form.get('bet', 0))
+            bet_str = request.form.get('bet', '').strip()
+            print("Raw bet input:", repr(bet_str))  # Debugging info
+           
+            if not bet_str.isdigit():
+                message = "Veuillez entrer un montant valide."
+            else:
+                bet = int(bet_str)
+                max_bet = game.dotation_initiale - game.mise_totale
+                print(f"Bet entered: {bet}, Max allowed: {max_bet}")  # More debugging info
+                
                 if bet > 0 and bet <= (game.dotation_initiale - game.mise_totale):
                     game.mise_totale += bet
 
-                    # Check if the game has reached the River phase
-                    if game.phase >= 3:  # River is the last phase (phase 3)
-                        return redirect(url_for('end'))  # Redirect to the end screen
+                    # ✅ SAVE the data immediately
+                    save_user_data(
+                        info=None,  # No participant info yet
+                        cartes=game.cartes,
+                        decision=f"phase_{game.phase}_bet",
+                        montant=bet,
+                    )
 
-                    game.next_phase()  # Move to the next phase
-                    return redirect(url_for('jeu'))  # Return to the game
+                    if game.phase < 3:
+                        game.next_phase()
+                        return redirect(url_for('jeu'))
+                    else:
+                        return redirect(url_for('round_summary'))
                 else:
-                    message = "Montant invalide. Assurez-vous qu'il est supérieur à 0 et dans vos fonds restants."
-            except ValueError:
-                message = "Veuillez entrer un montant valide."
-
+                    message = "Montant invalide."
+            
         # Render the betting page
         return render_template(
             'bet.html',
             mise_totale=game.mise_totale,
-            money_left=game.dotation_initiale - game.mise_totale,
+            money_left=money_left,
             message=message
         )
     
+    @app.route('/final_form', methods=['GET', 'POST'])
+    def final_form():
+        global participant_info, mise_depart
+        if request.method == 'POST':
+            # 1. Collect participant information from the form
+            participant_info = {
+                'age': request.form['age'],
+                'niveau': request.form['niveau'],
+                "sexe": request.form['sexe']
+            }
+
+            # 2. Log final decision and cards
+            save_user_data(
+                info=participant_info,
+                cartes=game.cartes,
+                decision="final",
+                montant=game.mise_totale,
+            )
+            
+            return redirect(url_for('end'))  # Now redirect to final results
+
+        return render_template('formulaire.html')  # Reuse the form template
+
+
     @app.route('/end', methods=['GET', 'POST'])
     def end():
         global participant_info, mise_depart, mise_totale, game
 
         if request.method == 'POST':
-            # Collect the player's sex from the form
-            participant_info['sexe'] = request.form.get('sexe')
 
             # Collect final game data
             final_data = {
-                "prenom": participant_info['prenom'],
                 "age": participant_info['age'],
                 "niveau": participant_info['niveau'],
                 "sexe": participant_info['sexe'],
-                "mise_totale": game.mise_totale,
-                "dotation_initiale": game.dotation_initiale
+                "mise_totale": game.mise_totale
             }
 
             # Save the data to a CSV file
-            save_user_data(final_data)
+            save_user_data(
+                info=participant_info,
+                cartes=game.cartes,
+                decision="final",
+                montant=game.mise_totale,
+            )
 
-            # Reset global variables
-            participant_info = {}
-            mise_depart = 0
-            mise_totale = 0
-            game = PokerGame()  # Reinitialize the game instance
+        # Thank the player and show final screen
+            response = render_template('thank_you.html', data=final_data, round_number=round_number)
+        else:
+            # Show regular end screen
+            response = render_template('end.html', data=participant_info, mise_totale=game.mise_totale, dotation_initiale=game.dotation_initiale)
 
-            # Thank the player and end the game
-            return render_template('thank_you.html', data=final_data)
+        # Reset global variables
+        participant_info = {}
+        mise_depart = 0
+        mise_totale = 0
+        game = PokerGame(deck_initializer=initialiser_deck, draw_function=tirer_cartes)
 
-        # Render the end screen for GET requests
-        return render_template('end.html', data=participant_info, mise_totale=game.mise_totale, dotation_initiale=game.dotation_initiale)
+        return response
+    
+    @app.route('/next_round', methods=['POST'])
+    def next_round():
+        global game, round_number
+        max_rounds = 3
+
+        round_number = session.get('round_number', 1)
+
+        if round_number < max_rounds:
+            round_number += 1
+            session['round_number'] = round_number
+
+            if round_number == 3:
+                session['starting_bet'] = 50  # Apply special rule
+            else:
+                session['starting_bet'] = 0  # Default starting bet
+
+            game.reset_for_new_round()
+            return redirect(url_for('jeu'))  # <-- Go to preflop setup
+        else:
+            return redirect(url_for('final_form'))
+        
+    @app.route('/end_summary')
+    def end_summary():
+        message = "Fin de la troisième partie. Le jeu se termine maintenant."
+        return render_template('round_summary.html', round_number=3, message=message, show_button=True)
+    
+    @app.route('/download_csv')
+    def download_csv():
+        try:
+            return send_file('data/decisions.csv', as_attachment=True)
+        except FileNotFoundError:
+            return "Aucun fichier trouvé.", 404
+

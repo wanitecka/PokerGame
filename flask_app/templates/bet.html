@@ -13,7 +13,7 @@
         <p>Argent restant : {{ money_left }}€</p>
         <form method="POST" action="{{ url_for('bet') }}">
             <label for="bet">Entrez votre mise :</label>
-            <input type="number" id="bet" name="bet" min="0" max="{{ money_left }}" required>
+            <input type="number" id="bet" name="bet" min="1" max="{{ money_left }}" required>
             <button type="submit">Miser</button>
         </form>
         {% if message %}

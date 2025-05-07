@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Résumé du Round</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Fin de la partie {{ round_number }}</h1>
+        <p>{{ message }}</p>
+
+        {% if show_final_button %}
+            <!-- Button to go to final form -->
+            <form action="{{ url_for('final_form') }}" method="get">
+                <button type="submit" class="button">Terminer le jeu</button>
+            </form>
+        {% else %}
+            <!-- Button to start next round -->
+            <form action="{{ url_for('next_round') }}" method="post">
+                <button type="submit" class="button">Suivre</button>
+            </form>
+        {% endif %}
+    </div>
+</body>
+</html>

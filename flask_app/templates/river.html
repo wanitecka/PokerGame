@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>Phase River</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Phase River</h1>
+        <h2>Round : {{ round_number }}</h2>
+        <p>Mise de départ : {{ mise_depart }}€</p>
+        <p>Total misé : {{ mise_totale }}€</p>
+        <p>Argent restant : {{ money_left }}€</p>
+        <p>Chance de gagner : {{ chances }}%</p>
+
+        <!-- Player's Cards -->
+        <div class="cards">
+            <h2>Vos Cartes :</h2>
+            <div class="personal-cards">
+                {% for card in cartes %}
+                <img src="{{ url_for('static', filename=image_paths[card]) }}" alt="Carte {{ loop.index }}">
+                {% endfor %}
+            </div>
+
+            <!-- Community Cards -->
+            <h2>Cartes Communes :</h2>
+            <div class="community-cards">
+                {% for card in cartes_communes %}
+                <img src="{{ url_for('static', filename=image_paths[card]) }}" alt="Carte Commune {{ loop.index }}">
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Game Actions -->
+        <div class="actions">
+            <h2>Que décidez-vous ?</h2>
+            <form method="POST" action="{{ url_for('jeu') }}">
+                <button type="submit" name="action" value="follow">Suivre</button>
+                <button type="submit" name="action" value="fold">Se coucher</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

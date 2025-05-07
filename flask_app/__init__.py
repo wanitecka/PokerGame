@@ -1,7 +1,8 @@
 from flask import Flask
-from flask_app.routes import register_routes
+from flask_app.routes import register_routes, os
 
 def create_app():
+    os.makedirs('data', exist_ok=True)
     app = Flask(__name__)
     
     # Load configuration
@@ -11,6 +12,7 @@ def create_app():
     )
 
     # Register routes
+    from .routes import register_routes
     register_routes(app)
 
     return app

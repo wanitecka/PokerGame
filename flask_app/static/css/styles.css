@@ -47,10 +47,11 @@ button.red {
     margin: 20px 0;
 }
 
-.personal-cards, .community-cards {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
+.personal-cards .community-cards {
+    display: flex; /* Arrange cards in a row */
+    justify-content: center; /* Center the cards horizontally */
+    gap: 10px; /* Add spacing between cards */
+    margin: 20px 0; /* Add vertical spacing */
 }
 
 .actions {

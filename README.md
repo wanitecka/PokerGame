@@ -13,17 +13,20 @@ flask-poker-game
 │   │   ├── css
 │   │   │   └── styles.css    # CSS styles for the application
 │   │   └── images
-│   │       └── fond_poker.png # Background image for the application
+│   │   │   └── fond_poker.png # Background image for the application
+│   │   └── cartes_images
+│   │       └── [card_images_here].png # Images of playing cards used in the game
 │   └── templates
 │       ├── base.html        # Base template for the application
 │       ├── index.html       # Homepage template
 │       ├── form.html        # Template for participant information form
-│       ├── game.html        # Main game interface template
+│       ├── preflop.html 
+│       ├── flop.html 
+│       ├── turn.html 
+│       ├── river.html 
 │       └── end.html         # End game results template
 ├── data
 │   └── decisions.csv        # Stores participant decisions and game data
-├── cartes_images
-│   └── [card_images_here].png # Images of playing cards used in the game
 ├── requirements.txt          # Lists project dependencies
 ├── runtime.txt               # Specifies Python version for the application
 ├── wsgi.py                   # Entry point for the WSGI server

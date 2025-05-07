@@ -9,14 +9,14 @@
 <body>
     <div class="container">
         <h1>Merci d'avoir joué !</h1>
-        <p>Prénom : {{ data['prenom'] }}</p>
         <p>Âge : {{ data['age'] }}</p>
         <p>Niveau : {{ data['niveau'] }}</p>
         <p>Sexe : {{ data['sexe'] }}</p>
         <p>Total misé : {{ data['mise_totale'] }}€</p>
         <p>Dotation initiale : {{ data['dotation_initiale'] }}€</p>
         <p>Vos données ont été enregistrées avec succès.</p>
-        <a href="{{ url_for('index') }}">Retour à l'accueil</a>
+        <p>Partie actuelle : {{ round_number }}</p>
+        <a href="{{ url_for('jeu') }}" class="button">Commencer une nouvelle partie</a>
     </div>
 </body>
 </html>
