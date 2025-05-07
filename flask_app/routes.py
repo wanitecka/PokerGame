@@ -2,8 +2,12 @@ from flask import Flask, render_template, request, redirect, url_for, session, s
 import random
 import os
 import csv
+import logging
 from datetime import datetime
 from flask_app.game_logic import PokerGame, initialiser_deck, tirer_cartes, charger_images_cartes
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Global variables
 participant_info = {"age": "", "niveau": "", "traitement": ""}  # To store player information (e.g., name, age, level)
@@ -19,7 +23,7 @@ def save_user_data(info, cartes, decision, montant=0):
     round_number = session.get('round_number', 1)
     phase = getattr(game, 'phase', None)  # Safely get the current phase
     
-    print("📁 Attempting to save data to CSV...")
+    logger.info("📁 Attempting to save data to CSV...")
     """
     Save the player's data to a CSV file.
     """
@@ -45,14 +49,14 @@ def save_user_data(info, cartes, decision, montant=0):
     ]
     
     file_path = os.path.abspath("data/decisions.csv")
-    print("📄 Writing to file:", file_path)
+    logger.info("📄 Writing to file:", file_path)
 
     with open(file_path, "a", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(row)
         f.flush()
 
-    print("✅ Data saved:", row)
+    logger.info("✅ Data saved:", row)
 
 # Initialize the game instance
 game = PokerGame(deck_initializer=initialiser_deck, draw_function=tirer_cartes)
@@ -70,7 +74,7 @@ def register_routes(app):
     def jeu():
         global game, mise_totale, max_rounds, round_number, total_money_bet, mise_depart
 
-        print(f"Current phase: {game.phase}, Round: {session.get('round_number', 1)}")
+        logger.info(f"Current phase: {game.phase}, Round: {session.get('round_number', 1)}")
 
         round_number = session.get('round_number', 1)
        
@@ -88,7 +92,7 @@ def register_routes(app):
 
         # Check if money left is 0
         if money_left <= 0 and game.phase > 3:
-            print(f"Redirecting to final_form — money_left: {money_left}, round: {round_number}, phase: {game.phase}")
+            logger.info(f"Redirecting to final_form — money_left: {money_left}, round: {round_number}, phase: {game.phase}")
             return redirect(url_for('final_form'))  # Redirect to the end screen
 
         if request.method == 'POST':
@@ -106,7 +110,7 @@ def register_routes(app):
         elif game.phase == 2:
             template = 'turn.html'
         elif game.phase == 3:
-            print("We are in Phase 3!")
+            logger.info("We are in Phase 3!")
             template = 'river.html'
             
         # Calculate chances (placeholder logic)
@@ -133,7 +137,7 @@ def register_routes(app):
 
         # Ensure round_number is tracked in session
         round_number = session.get('round_number', 1)
-        print(f"Round number at summary: {round_number}")
+        logger.info(f"Round number at summary: {round_number}")
 
         # Check if game has reached max rounds, then redirect to final form
         if round_number > max_rounds:
@@ -172,14 +176,14 @@ def register_routes(app):
        
         if request.method == 'POST':
             bet_str = request.form.get('bet', '').strip()
-            print("Raw bet input:", repr(bet_str))  # Debugging info
+            logger.info("Raw bet input:", repr(bet_str))  # Debugging info
            
             if not bet_str.isdigit():
                 message = "Veuillez entrer un montant valide."
             else:
                 bet = int(bet_str)
                 max_bet = game.dotation_initiale - game.mise_totale
-                print(f"Bet entered: {bet}, Max allowed: {max_bet}")  # More debugging info
+                logger.info(f"Bet entered: {bet}, Max allowed: {max_bet}")  # More debugging info
                 
                 if bet > 0 and bet <= (game.dotation_initiale - game.mise_totale):
                     game.mise_totale += bet
